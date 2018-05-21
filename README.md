@@ -59,9 +59,13 @@ At the time of this writing, the API is in version 1 (v1)
 
 
 Via curl, an example may look like :  
-`$curl -X POST -H "Content-Type: application/json" -d '{"browsedSku": "MP822LL/A", "cartSkus": ["WTLRBSILBK"], "compatibleDevice": "MP822LL/A"}' http://localhost:8080/api/v1/recommend`
+`$curl -X POST -H "Content-Type: application/json" -d '{"browsedSku": "MP822LL/A", "cartSkus": ["WTLRBSILBK"], "compatibleDevice": "MP822LL/A"}' http://<host>:8080/api/v1/recommend`
 
 
+Additionally, a replacement dataset can be submitted, also via a POST request to the /dataset endpoint:  
+`$curl -X POST -F "file=@</path/to/new/dataset>.csv"  http://<host>:8080/api/v1/dataset`
+
+*note, the new dataset will immediately replace the current dataset and will serve as the default dataset on restart
 
 ---  
 
