@@ -13,10 +13,14 @@ import com.typesafe.config.{Config, ConfigFactory}
 
 import de.heikoseeberger.accessus.Accessus._
 
+import org.slf4j.{Logger, LoggerFactory}
+
+import Tables._
+
 import scala.concurrent.{ExecutionContextExecutor, Future}
 import scala.util.{Failure, Success}
 
-import Tables._
+
 
 /*
 * companion v.1
@@ -34,6 +38,7 @@ object Companion extends ServiceRoutes with Utils {
   private val logFile: String  = config.getString("logging.file")
   private val logLevel: String = config.getString("akka.logLevel")
 
+
   System.setProperty("LOG_PATH", logPath)
   System.setProperty("LOG_FILE", logFile)
   System.setProperty("LOG_LEVEL", logLevel)
@@ -42,9 +47,16 @@ object Companion extends ServiceRoutes with Utils {
   implicit val materializer: ActorMaterializer = ActorMaterializer()
   implicit val executionContext: ExecutionContextExecutor = system.dispatcher
 
+  val log: Logger = LoggerFactory.getLogger(getClass.getName)
+
   def main(args: Array[String]): Unit = {
 
-    seedTable()
+    seedTable().onComplete {
+      case Success(_) => log.info("Database successfully seeded.")
+      case Failure(e) =>
+        log.error(s"ERROR: Database seeding failed with error message: $e. Now exiting")
+        System.exit(1)
+    }
 
     Http()
       .bindAndHandle(

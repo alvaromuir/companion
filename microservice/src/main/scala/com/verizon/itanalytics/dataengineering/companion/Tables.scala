@@ -2,21 +2,25 @@ package com.verizon.itanalytics.dataengineering.companion
 
 import java.nio.file.Paths
 
+import akka.Done
+import akka.stream.ActorMaterializer
 import akka.stream.alpakka.csv.scaladsl._
 import akka.stream.scaladsl._
+
 import com.typesafe.config.{Config, ConfigFactory}
 
-import scala.collection.mutable.ListBuffer
-import scala.concurrent.duration._
-import scala.concurrent.{Await, ExecutionContextExecutor}
-import scala.util.{Failure, Success}
-
 import slick.jdbc.H2Profile.api._
+import slick.jdbc.meta.MTable
+
+import org.slf4j.{Logger, LoggerFactory}
 
 import Companion.system
 
-import akka.Done
-import akka.stream.ActorMaterializer
+import scala.collection.mutable.ListBuffer
+import scala.concurrent.duration._
+import scala.concurrent.{Await, ExecutionContextExecutor, Future}
+import scala.util.{Failure, Success}
+
 
 
 /*
@@ -31,6 +35,8 @@ object Tables {
   private val dataUploadPath: String = config.getString("http.dataUploadPath")
   private val srcDataFileName: String = config.getString("db.srcDataFileName")
   private val filePath = s"$dataUploadPath/$srcDataFileName"
+
+  val log: Logger = LoggerFactory.getLogger(getClass.getName)
 
   final case class Recommendation(
       SELECTION_SKU_0: String,
@@ -92,23 +98,30 @@ object Tables {
   def exec[T](action: DBIO[T], timeOut: FiniteDuration = 2.seconds): T = Await.result(db.run(action), timeOut)
 
   /**
-    * Initializes a database and populates table with designated CSV data set
+    * A Future that initializes a database and populates table with designated CSV data set
     * @param numRows row limit of insertion, defaults to None - which is equivalent to all rows in CSV data set
     * @param dataSet file path of CSV data set
+    * @return Future[Unit]
     */
-  def seedTable(table:TableQuery[RecommendationTable] = recommendations, numRows: Option[Int] = None, dataSet: String = filePath): Unit = {
+  def seedTable(table:TableQuery[RecommendationTable] = recommendations, numRows: Option[Int] = None, dataSet: String = filePath): Future[Unit] = {
 
     implicit val materializer: ActorMaterializer = ActorMaterializer()
     implicit val executionContext: ExecutionContextExecutor = system.dispatcher
 
+    if(Await.result(db.run(MTable.getTables), 1.seconds).toList.map { _.name.name}.contains(table.baseTableRow.tableName)) {
+      Await.result(db.run(table.schema.truncate), 2.seconds)
+      log.info(s"${table.baseTableRow.tableName} table truncated.")
+    }
+
     db.run(table.schema.create)
+
     val limit = numRows match {
       case None => io.Source.fromFile(dataSet).getLines.size
       case _    => numRows.get
     }
     var tableData = new ListBuffer[Recommendation]()
 
-    FileIO
+    Future(FileIO
       .fromPath(Paths.get(dataSet))
       .via(CsvParsing.lineScanner())
       .map(_.map(_.utf8String.trim))
@@ -132,7 +145,7 @@ object Tables {
         case Success(Done) =>
           db.run(table ++= tableData)
         case Failure(e) => println(s"Stream failed with $e.")
-      }
+      })
   }
 
 }

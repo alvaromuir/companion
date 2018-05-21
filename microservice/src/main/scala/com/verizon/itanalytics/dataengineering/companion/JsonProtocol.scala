@@ -48,13 +48,29 @@ object JsonProtocol extends DefaultJsonProtocol with NullOptions {
     override def read(json: JsValue): Response = ???
   }
 
-  def jsonize (rslts: Seq[Recommendation]): String = Response(
-    status = StatusCodes.OK.intValue,
-    msg = StatusCodes.OK.defaultMessage,
-    recommendedSku = Option(rslts.zipWithIndex.map {
-      case (rslt, index) => RecommendedSku(id = rslt.RCMND_ITEM_CD, recNum = index + 1)
-    })
-  ).toJson.compactPrint
+  def jsonize(rslts: AnyRef): String = {
+    rslts match {
+      case r: Seq[Recommendation] => Response(
+        status = StatusCodes.OK.intValue,
+        msg = StatusCodes.OK.defaultMessage,
+        recommendedSku = Option(r.zipWithIndex.map {
+          case (rslt, index) => RecommendedSku(id = rslt.RCMND_ITEM_CD, recNum = index + 1)
+        })
+      ).toJson.compactPrint
+
+      case _: String => Response(
+        status = StatusCodes.OK.intValue,
+        msg = StatusCodes.OK.defaultMessage
+      ).toJson.compactPrint
+
+      case _: Throwable => Response(
+        status = StatusCodes.InternalServerError.intValue,
+        msg = StatusCodes.InternalServerError.defaultMessage
+      ).toJson.compactPrint
+
+
+    }
+  }
 
 }
 

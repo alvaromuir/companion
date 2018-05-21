@@ -1,17 +1,21 @@
 package com.verizon.itanalytics.dataengineering.companion
 
-import java.util.logging.Logger
+import java.nio.file.Paths
 
 import akka.http.scaladsl.model.{ContentTypes, HttpEntity, HttpResponse, StatusCodes}
 import akka.http.scaladsl.server.{ExceptionHandler, Route}
 import akka.stream.{ActorMaterializer, Materializer}
+import akka.stream.scaladsl._
 import akka.util.Timeout
+
 import com.typesafe.config.{Config, ConfigFactory}
 import slick.jdbc.H2Profile.api._
 
 import scala.concurrent.ExecutionContextExecutor
 import scala.concurrent.duration._
 import scala.util.control.NonFatal
+
+
 
 import Companion.system
 import Tables._
@@ -33,10 +37,11 @@ trait ServiceRoutes {
 
   private val config: Config = ConfigFactory.load()
   private val apiVersion: String = config.getString("http.apiVersion")
+  private val dataUploadPath: String = config.getString("http.dataUploadPath")
+  private val srcDataFileName: String = config.getString("db.srcDataFileName")
   private val timeOut: Int = config.getInt("http.timeOut")
 
   private implicit val timeout: Timeout = Timeout(timeOut.seconds)
-  private val log = Logger.getLogger(this.getClass.getName)
 
   implicit def routesExceptionHandler: ExceptionHandler =
     ExceptionHandler {
@@ -58,22 +63,55 @@ trait ServiceRoutes {
         extractRequestContext { ctx =>
           implicit val materializer: Materializer = ctx.materializer
           pathPrefix(s"$apiVersion") {
-            path("recommend") {
+            path("dataset") {
               get {
-                complete(s"Viewed will go here ...")
+                complete(HttpEntity(ContentTypes.`text/csv(UTF-8)`, FileIO.fromPath(Paths.get(s"$dataUploadPath/$srcDataFileName"))))
               } ~
-              post {
-                entity(as[Viewed]) { viewed =>
-                  onComplete(db.run(recommendations.filter(_.selectionSku0 === viewed.browsedSku).result)) {
-                    case Success(rslts) => complete(HttpEntity(ContentTypes.`application/json`, jsonize(rslts)))
-                    case Failure(e) => complete(HttpEntity(ContentTypes.`text/html(UTF-8)`, e.toString))
+                post {
+                  toStrictEntity(timeOut.seconds) {
+                    fileUpload("file") {
+                      case (metadata, byteSource) =>
+                        val sink = FileIO.toPath(
+                          Paths.get(dataUploadPath) resolve srcDataFileName)
+                        val uploaded = byteSource.runWith(sink)
+                        onComplete(uploaded) {
+                          case Success(_) =>
+                            val path = s"$dataUploadPath/$srcDataFileName"
+                            onComplete(seedTable(dataSet = path)) {
+                              case Success(_) =>
+                                val numRow = exec(recommendations.length.result)
+                                val respMsg = s"Database successfully seeded with $numRow rows from ${metadata.fileName}."
+                                log.info(respMsg)
+                                complete(HttpEntity(ContentTypes.`application/json`, s"""{"status":200,"msg":"$respMsg"}""")) //toDo: jsonize this
+                              case Failure(e) =>
+                                log.error(s"ERROR: Database seeding failed with error message: $e. Now exiting")
+                                complete(HttpEntity(ContentTypes.`application/json`, jsonize(e)))
+                            }
+                          case Failure(e) =>
+                            log.error(s"ERROR: Uploading the data set failed with error message: $e. Now exiting")
+                            complete(HttpEntity(ContentTypes.`application/json`, jsonize(e)))
+                        }
+                    }
                   }
                 }
+            } ~
+            path("recommend") {
+                get {
+                  complete(StatusCodes.OK)
+                } ~
+                  post {
+                    entity(as[Viewed]) {
+                      viewed =>
+                        onComplete(db.run(recommendations.filter(_.selectionSku0 === viewed.browsedSku).result)) {
+                          case Success(rslts) => complete(HttpEntity(ContentTypes.`application/json`, jsonize(rslts)))
+                          case Failure(e) => complete(HttpEntity(ContentTypes.`application/json`, jsonize(e)))
+                        }
+                    }
+                  }
               }
             }
           }
         }
       }
     }
-  }
 }
