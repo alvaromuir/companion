@@ -89,6 +89,7 @@ assemblyMergeStrategy in assembly := {
 }
 
 
-//mainClass in assembly := some("com.verizon.itanalytics.dataengineering.companion.Companion")
+mainClass in assembly := some("com.verizon.itanalytics.dataengineering.companion.Companion")
 assemblyOption in assembly := (assemblyOption in assembly).value.copy(includeScala = true)
+assemblyJarName in assembly := s"${name.value}-v${version.value}.jar"
 fullClasspath in Runtime := (fullClasspath in (Compile, run)).value
