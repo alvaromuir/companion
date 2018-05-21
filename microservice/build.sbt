@@ -1,7 +1,7 @@
 name            := "companion"
 version         := "1.0-SNAPSHOT"
 scalaVersion    := "2.11.12"
-organization    := "com.verizon.itanalytics.dataengineering.companion"
+organization    := "com.verizon.itanalytics.dataengineering"
 resolvers ++= Seq(
   "Local Maven Repository" at "file://" + Path.userHome.absolutePath + "/.m2/repository",
   Resolver.sonatypeRepo("releases"),
@@ -89,7 +89,6 @@ assemblyMergeStrategy in assembly := {
 }
 
 
-mainClass in assembly := some("package com.verizon.itanalytics.dataengineering.companion.Companion")
-assemblyOption in assembly := (assemblyOption in assembly).value.copy(includeScala = false)
-assemblyJarName := s"${name.value}-v${version.value}.jar"
+//mainClass in assembly := some("com.verizon.itanalytics.dataengineering.companion.Companion")
+assemblyOption in assembly := (assemblyOption in assembly).value.copy(includeScala = true)
 fullClasspath in Runtime := (fullClasspath in (Compile, run)).value
