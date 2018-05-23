@@ -15,8 +15,6 @@ import scala.concurrent.ExecutionContextExecutor
 import scala.concurrent.duration._
 import scala.util.control.NonFatal
 
-
-
 import Companion.system
 import Tables._
 import JsonProtocol._
@@ -67,7 +65,7 @@ trait ServiceRoutes {
               get {
                 complete(HttpEntity(ContentTypes.`text/csv(UTF-8)`, FileIO.fromPath(Paths.get(s"$dataUploadPath/$srcDataFileName"))))
               } ~
-                post {
+              post {
                   toStrictEntity(timeOut.seconds) {
                     fileUpload("file") {
                       case (metadata, byteSource) =>
@@ -77,12 +75,12 @@ trait ServiceRoutes {
                         onComplete(uploaded) {
                           case Success(_) =>
                             val path = s"$dataUploadPath/$srcDataFileName"
-                            onComplete(seedTable(dataSet = path)) {
+                            onComplete(reSeedTable(dataSet = path)) {
                               case Success(_) =>
-                                val numRow = exec(recommendations.length.result)
+                                val numRow = exec(affinities.length.result)
                                 val respMsg = s"Database successfully seeded with $numRow rows from ${metadata.fileName}."
                                 log.info(respMsg)
-                                complete(HttpEntity(ContentTypes.`application/json`, s"""{"status":200,"msg":"$respMsg"}""")) //toDo: jsonize this
+                                complete(HttpEntity(ContentTypes.`application/json`, respMsg))
                               case Failure(e) =>
                                 log.error(s"ERROR: Database seeding failed with error message: $e. Now exiting")
                                 complete(HttpEntity(ContentTypes.`application/json`, jsonize(e)))
@@ -96,13 +94,10 @@ trait ServiceRoutes {
                 }
             } ~
             path("recommend") {
-                get {
-                  complete(StatusCodes.OK)
-                } ~
-                  post {
+              post {
                     entity(as[Viewed]) {
                       viewed =>
-                        onComplete(db.run(recommendations.filter(_.selectionSku0 === viewed.browsedSku).result)) {
+                        onComplete(db.run(affinities.filter(_.selectionSku0 === viewed.browsedSku).result)) {
                           case Success(rslts) => complete(HttpEntity(ContentTypes.`application/json`, jsonize(rslts)))
                           case Failure(e) => complete(HttpEntity(ContentTypes.`application/json`, jsonize(e)))
                         }

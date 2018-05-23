@@ -38,7 +38,7 @@ object Tables {
 
   val log: Logger = LoggerFactory.getLogger(getClass.getName)
 
-  final case class Recommendation(
+  final case class Affinity(
       SELECTION_SKU_0: String,
       SELECTION_ITEM_DESC_0: String,
       SELECTION_CATEGORY_0: String,
@@ -53,7 +53,7 @@ object Tables {
       id: Int = 0
   )
 
-  final class RecommendationTable(tag: Tag) extends Table[Recommendation](tag, "recommendation") {
+  final class AffinityTable(tag: Tag) extends Table[Affinity](tag, "affinity") { // table name to config?
     def id =
       column[Int]("id", O.PrimaryKey, O.AutoInc) // I added this as a PKey
     def selectionSku0 = column[String]("SELECTION_SKU_0")
@@ -81,10 +81,10 @@ object Tables {
        lift,
        confidence,
        id)
-        .mapTo[Recommendation]
+        .mapTo[Affinity]
   }
 
-  lazy val recommendations = TableQuery[RecommendationTable]
+  lazy val affinities = TableQuery[AffinityTable]
 
   lazy val db = Database.forConfig("db")
 
@@ -103,15 +103,11 @@ object Tables {
     * @param dataSet file path of CSV data set
     * @return Future[Unit]
     */
-  def seedTable(table:TableQuery[RecommendationTable] = recommendations, numRows: Option[Int] = None, dataSet: String = filePath): Future[Unit] = {
-
+  def seedTable(table:TableQuery[AffinityTable] = affinities, numRows: Option[Int] = None, dataSet: String = filePath): Future[Unit] = {
     implicit val materializer: ActorMaterializer = ActorMaterializer()
     implicit val executionContext: ExecutionContextExecutor = system.dispatcher
 
-    if(Await.result(db.run(MTable.getTables), 1.seconds).toList.map { _.name.name}.contains(table.baseTableRow.tableName)) {
-      Await.result(db.run(table.schema.truncate), 2.seconds)
-      log.info(s"${table.baseTableRow.tableName} table truncated.")
-    }
+
 
     db.run(table.schema.create)
 
@@ -119,7 +115,7 @@ object Tables {
       case None => io.Source.fromFile(dataSet).getLines.size
       case _    => numRows.get
     }
-    var tableData = new ListBuffer[Recommendation]()
+    var tableData = new ListBuffer[Affinity]()
 
     Future(FileIO
       .fromPath(Paths.get(dataSet))
@@ -127,7 +123,7 @@ object Tables {
       .map(_.map(_.utf8String.trim))
       .drop(1)
       .map { x =>
-        Recommendation(x.head,
+        Affinity(x.head,
                        x(1),
                        x(2),
                        Option(x(3)),
@@ -147,5 +143,18 @@ object Tables {
         case Failure(e) => println(s"Stream failed with $e.")
       })
   }
+
+  def reSeedTable(table:TableQuery[AffinityTable] = affinities, numRows: Option[Int] = None, dataSet: String = filePath): Future[Unit] = {
+    implicit val materializer: ActorMaterializer = ActorMaterializer()
+    implicit val executionContext: ExecutionContextExecutor = system.dispatcher
+
+    exec(table.schema.truncate, 5.seconds)
+    log.info(s"${table.baseTableRow.tableName} table truncated.")
+
+    seedTable(table, numRows, dataSet)
+
+  }
+
+
 
 }
