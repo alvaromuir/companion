@@ -16,8 +16,8 @@ Microservice developed for reactive scalability with the following components:
 - [Scala 2.11.8](https://www.scala-lang.org/) - Core development language
 - [Akka-Http](https://doc.akka.io/docs/akka-http/current/introduction.html) - Http stack for REST interface
 - [Akka-Alpakka](https://developer.lightbend.com/docs/alpakka/current/) - Enterprise data integration middleware
-- [Typesave Slick](http://slick.lightbend.com/)  - Database abstraction layer
-- [H2](http://www.h2database.com/html/main.html) - Presistant in-mem storage
+- [Lightbend Slick](http://slick.lightbend.com/)  - Database abstraction layer
+- [H2](http://www.h2database.com/html/main.html) - Persistent in-mem storage
 
 
 
