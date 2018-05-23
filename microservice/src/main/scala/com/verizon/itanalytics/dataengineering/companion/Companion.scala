@@ -21,7 +21,6 @@ import scala.concurrent.{ExecutionContextExecutor, Future}
 import scala.util.{Failure, Success}
 
 
-
 /*
 * companion v.1
 * Alvaro Muir, Verizon IT Analytics: Data Engineering

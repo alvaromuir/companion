@@ -10,7 +10,7 @@ import akka.stream.scaladsl._
 import com.typesafe.config.{Config, ConfigFactory}
 
 import slick.jdbc.H2Profile.api._
-import slick.jdbc.meta.MTable
+
 
 import org.slf4j.{Logger, LoggerFactory}
 

@@ -4,18 +4,19 @@ import java.io.File
 
 import com.google.common.io.Files._
 import com.typesafe.config.{Config, ConfigFactory}
+
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import akka.http.scaladsl.server._
-import org.scalatest.{Matchers, WordSpec}
-import slick.jdbc.H2Profile.api._
-import com.verizon.itanalytics.dataengineering.companion.Tables._
-import ViewedJsonSupport._
-import Directives._
-import akka.http.scaladsl.unmarshalling.Unmarshal
-import com.verizon.itanalytics.dataengineering.companion.JsonProtocol.Recommendation
 
-import scala.util.{Failure, Success}
+import org.scalatest.{Matchers, WordSpec}
+
+import slick.jdbc.H2Profile.api._
+
+import com.verizon.itanalytics.dataengineering.companion.Tables._
+
+import Directives._
+
 
 /*
 * companion

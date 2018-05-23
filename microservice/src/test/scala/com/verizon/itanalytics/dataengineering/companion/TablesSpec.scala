@@ -6,13 +6,12 @@ import com.typesafe.config.{Config, ConfigFactory}
 import org.scalatest.FlatSpec
 
 import slick.jdbc.H2Profile.api._
-import slick.jdbc.meta.MTable
 
 import Companion.system
 import Tables._
 
 import scala.concurrent.ExecutionContextExecutor
-import scala.concurrent.duration._
+
 import scala.io.Source
 
 
