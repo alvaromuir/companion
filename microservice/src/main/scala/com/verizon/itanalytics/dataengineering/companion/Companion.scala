@@ -68,10 +68,7 @@ object Companion extends ServiceRoutes with Utils {
         case Failure(cause)                  => println(s"Can't bind to $interface:$port: $cause")
       }
   }
-
-  seedTable()
-
-
+  
   /** Log HTTP method, path, status and response time in micros to the given log at info level. */
   def accessLog(log: LoggingAdapter): AccessLog[Long, Future[Done]] =
     Sink.foreach {
