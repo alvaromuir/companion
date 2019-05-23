@@ -1,4 +1,4 @@
-Companion enabled real-time recommendation via market basket analysis
+Companion is real-time recommendation via market basket analysis
 ---
 
 Last update: 05.20.2018
@@ -72,5 +72,5 @@ Additionally, a replacement dataset can be submitted, also via a POST request to
 
 
 #### Initial Development ####
-Model Development: [Supriya P Gharpure](supriya.gharpure@verizonwireless.com), Verizon IT Analytics Data Science  
-App Development: [Alvaro Muir](alvaro.muir@one.verizon.com), Verizon IT Analytics Data Engineering 
+Model Development: [Supriya P Gharpure](mailto:supriya.gharpure@verizonwireless.com), Verizon IT Analytics Data Science  
+App Development: Alvaro Muir, Verizon IT Analytics Data Engineering 
